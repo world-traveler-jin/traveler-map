@@ -1,7 +1,7 @@
 import Head from 'next/head';
 import dynamic from 'next/dynamic';
 import 'leaflet/dist/leaflet.css';
-import '@/styles/globals.css';
+//import '@/styles/globals.css';
 
 const Map = dynamic(() => import('../components/Map'), { ssr: false });
 
