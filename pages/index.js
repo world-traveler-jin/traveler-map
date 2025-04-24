@@ -1,11 +1,13 @@
 import Head from 'next/head';
 import dynamic from 'next/dynamic';
+import { useState } from 'react';
 import 'leaflet/dist/leaflet.css';
-//import '@/styles/globals.css';
 
 const Map = dynamic(() => import('../components/Map'), { ssr: false });
 
 export default function Home() {
+  const [selectedCountry, setSelectedCountry] = useState(null);
+
   return (
     <>
       <Head>
@@ -26,8 +28,19 @@ export default function Home() {
 
         {/* 지도 영역 */}
         <div className="flex-grow h-[70vh]">
-          <Map />
+          <Map setSelectedCountry={setSelectedCountry} />
         </div>
+
+        {/* 국가 정보 팝업 */}
+        {selectedCountry && (
+          <section className="p-8 text-center bg-white shadow-lg max-w-4xl mx-auto mt-6">
+            <h2 className="text-2xl font-bold mb-2">{selectedCountry.name}</h2>
+            {selectedCountry.flag && (
+              <img src={selectedCountry.flag} alt={`${selectedCountry.name} Flag`} className="w-16 h-16 mb-2 mx-auto" />
+            )}
+            <p className="text-gray-600">{selectedCountry.description}</p>
+          </section>
+        )}
 
         {/* 소개 카드 */}
         <section className="p-8 text-center">

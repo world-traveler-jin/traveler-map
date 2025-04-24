@@ -1,12 +1,33 @@
-import { useEffect, useRef, useState } from 'react';
+// Map.js (위의 코드에서 변경된 부분)
+import { useEffect, useRef } from 'react';
 import L from 'leaflet';
 
-export default function Map() {
+export default function Map({ setSelectedCountry }) {
   const mapContainerRef = useRef(null);
   const mapInstanceRef = useRef(null);
 
-  // 클릭한 국가의 정보를 저장할 state
-  const [selectedCountry, setSelectedCountry] = useState(null);
+  // 위키피디아에서 국가 정보를 가져오는 함수
+  const getCountryInfo = async (countryName) => {
+    const url = `https://en.wikipedia.org/w/api.php?action=query&format=json&prop=extracts%7Cpageimages&exintro&explaintext&titles=${countryName}&piprop=thumbnail&pithumbsize=500&redirects=1`;
+    const res = await fetch(url);
+    const data = await res.json();
+    const pages = data.query.pages;
+    const pageId = Object.keys(pages)[0];
+
+    if (pageId && pages[pageId]) {
+      const extract = pages[pageId].extract;
+      const thumbnail = pages[pageId].thumbnail ? pages[pageId].thumbnail.source : null;
+
+      return {
+        description: extract,
+        flag: thumbnail,
+      };
+    }
+    return {
+      description: '정보를 가져올 수 없습니다.',
+      flag: null,
+    };
+  };
 
   useEffect(() => {
     if (mapInstanceRef.current) return;
@@ -81,40 +102,26 @@ export default function Map() {
               mouseout: function () {
                 layer.setStyle(defaultStyle);
               },
-              click: function () {
+              click: async function () {
                 // 클릭 시 국가 정보 저장
-                setSelectedCountry(feature.properties);
+                const countryData = await getCountryInfo(feature.properties.name);
+                setSelectedCountry({
+                  ...feature.properties,
+                  description: countryData.description,
+                  flag: countryData.flag,
+                });
               },
             });
           },
         }).addTo(map);
       });
-  }, []);
+  }, [setSelectedCountry]);
 
   return (
-    <div style={{ position: 'relative', height: '100vh' }}>
-      {/* 헤더와 메뉴 */}
-      <header style={{ position: 'absolute', top: 0, width: '100%', zIndex: 10, padding: '20px', backgroundColor: 'white' }}>
-        <h1>Traveler Map</h1>
-        <nav>
-          <a href="#">Home</a> | <a href="#">Countries</a> | <a href="#">Favorites</a>
-        </nav>
-      </header>
-
-      {/* 지도 영역 */}
-      <div
-        ref={mapContainerRef}
-        id="map"
-        style={{ width: '100%', height: '100%', marginTop: '60px' }} // 헤더 공간 제외
-      />
-
-      {/* 국가 정보 팝업 */}
-      {selectedCountry && (
-        <div style={{ position: 'absolute', bottom: '10%', left: '10%', backgroundColor: 'white', padding: '20px', borderRadius: '8px', boxShadow: '0 4px 6px rgba(0, 0, 0, 0.1)', zIndex: 20 }}>
-          <h2>{selectedCountry.name}</h2>
-          <p>{selectedCountry.description}</p>
-        </div>
-      )}
-    </div>
+    <div
+      ref={mapContainerRef}
+      id="map"
+      style={{ width: '100%', height: '100%' }}
+    />
   );
 }
