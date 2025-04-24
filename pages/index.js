@@ -1,6 +1,7 @@
 import Head from 'next/head';
 import dynamic from 'next/dynamic';
 import 'leaflet/dist/leaflet.css';
+import '@/styles/globals.css';
 
 const Map = dynamic(() => import('../components/Map'), { ssr: false });
 
@@ -11,9 +12,36 @@ export default function Home() {
         <title>Traveler Map</title>
         <meta name="viewport" content="initial-scale=1.0, width=device-width" />
       </Head>
-      <main style={{ height: '100vh', margin: 0, padding: 0 }}>
-        <Map />
-      </main>
+
+      <div className="flex flex-col min-h-screen bg-gradient-to-br from-blue-50 to-white text-gray-800">
+        {/* Header */}
+        <header className="w-full p-4 flex justify-between items-center shadow-md bg-white sticky top-0 z-10">
+          <h1 className="text-2xl font-bold text-blue-600">Traveler Map</h1>
+          <nav className="space-x-4">
+            <a href="#" className="text-gray-600 hover:text-blue-500">지도</a>
+            <a href="#" className="text-gray-600 hover:text-blue-500">국가별</a>
+            <a href="#" className="text-gray-600 hover:text-blue-500">찜목록</a>
+          </nav>
+        </header>
+
+        {/* 지도 영역 */}
+        <div className="flex-grow h-[70vh]">
+          <Map />
+        </div>
+
+        {/* 소개 카드 */}
+        <section className="p-8 text-center">
+          <h2 className="text-3xl font-bold mb-2">여행의 시작, 여기에 담다</h2>
+          <p className="text-gray-600 max-w-xl mx-auto">
+            Traveler Map은 전 세계를 자유롭게 여행하는 사람들을 위한 감성 지도 플랫폼입니다. 지도 위 나라를 클릭하면 내가 기록한 추억이 열립니다.
+          </p>
+        </section>
+
+        {/* Footer */}
+        <footer className="w-full p-4 bg-white text-center text-sm text-gray-500 border-t">
+          &copy; 2025 Traveler Map. Made with ❤️ for explorers.
+        </footer>
+      </div>
     </>
   );
 }
