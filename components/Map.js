@@ -1,4 +1,4 @@
-// Map.js 파일 (다크모드 실시간 감지 및 지도 업데이트 추가)
+// Map.js 파일 (다크모드/라이트모드 감성 스타일 강화)
 
 import { useEffect, useRef, useState } from 'react';
 import L from 'leaflet';
@@ -7,9 +7,8 @@ export default function Map({ setSelectedCountry, viewMode }) {
   const mapContainerRef = useRef(null);
   const mapInstanceRef = useRef(null);
   const [countryCenters, setCountryCenters] = useState({});
-  const [themeVersion, setThemeVersion] = useState(0); // 테마 변경 감지를 위한 상태
+  const [themeVersion, setThemeVersion] = useState(0);
 
-  // 위키피디아에서 국가 정보 가져오기
   const getCountryInfo = async (countryName) => {
     const url = `https://en.wikipedia.org/w/api.php?action=query&format=json&prop=extracts%7Cpageimages&exintro&explaintext&titles=${countryName}&piprop=thumbnail&pithumbsize=500&origin=*`;
     const res = await fetch(url);
@@ -24,7 +23,6 @@ export default function Map({ setSelectedCountry, viewMode }) {
     return { description: 'Unable to fetch information.', flag: null };
   };
 
-  // 지도 초기화 및 countryCenters.json 불러오기
   useEffect(() => {
     if (mapInstanceRef.current) return;
 
@@ -57,9 +55,8 @@ export default function Map({ setSelectedCountry, viewMode }) {
       .then((res) => res.json())
       .then((data) => setCountryCenters(data));
 
-    // 다크모드 감지: MutationObserver 설정
     const observer = new MutationObserver(() => {
-      setThemeVersion((v) => v + 1); // 테마 변경될 때마다 강제로 다시 렌더링하게 만듦
+      setThemeVersion((v) => v + 1);
     });
 
     observer.observe(document.documentElement, { attributes: true, attributeFilter: ['class'] });
@@ -67,7 +64,6 @@ export default function Map({ setSelectedCountry, viewMode }) {
     return () => observer.disconnect();
   }, []);
 
-  // viewMode, themeVersion 변경될 때마다 지도 다시 그리기
   useEffect(() => {
     const map = mapInstanceRef.current;
     if (!map) return;
@@ -75,6 +71,22 @@ export default function Map({ setSelectedCountry, viewMode }) {
     map.eachLayer((layer) => {
       map.removeLayer(layer);
     });
+
+    const isDark = document.documentElement.classList.contains('dark');
+
+    const backgroundColor = (viewMode === 'border')
+      ? (isDark ? '#0d1117' : '#ffffff')
+      : (isDark ? '#1f2937' : '#f3f4f6');
+
+    const borderColor = (viewMode === 'border')
+      ? (isDark ? '#f9fafb' : '#1f2937')
+      : (isDark ? '#555' : '#ccc');
+
+    const textColor = (viewMode === 'border')
+      ? (isDark ? '#ffffff' : '#000000')
+      : (isDark ? '#f3f4f6' : '#374151');
+
+    document.getElementById('map').style.backgroundColor = backgroundColor;
 
     if (viewMode === 'map') {
       const accessToken = process.env.NEXT_PUBLIC_MAPBOX_TOKEN;
@@ -90,10 +102,6 @@ export default function Map({ setSelectedCountry, viewMode }) {
       ).addTo(map);
     }
 
-    const isDark = document.documentElement.classList.contains('dark');
-    const borderColor = isDark ? '#ccc' : '#333';
-    const textColor = isDark ? '#f3f4f6' : '#374151';
-
     fetch('/data/countries.geo.json')
       .then((res) => res.json())
       .then((geojson) => {
@@ -101,8 +109,8 @@ export default function Map({ setSelectedCountry, viewMode }) {
           style: (feature) => ({
             color: borderColor,
             weight: 1,
-            fillColor: viewMode === 'border' ? (isDark ? '#1f2937' : '#ffffff') : '#ccc',
-            fillOpacity: viewMode === 'border' ? 0 : 0.2,
+            fillColor: viewMode === 'border' ? backgroundColor : '#ccc',
+            fillOpacity: viewMode === 'border' ? 1 : 0.2,
           }),
           onEachFeature: (feature, layer) => {
             layer.on({
@@ -119,8 +127,8 @@ export default function Map({ setSelectedCountry, viewMode }) {
                 layer.setStyle({
                   color: borderColor,
                   weight: 1,
-                  fillColor: viewMode === 'border' ? (isDark ? '#1f2937' : '#ffffff') : '#ccc',
-                  fillOpacity: viewMode === 'border' ? 0 : 0.2,
+                  fillColor: viewMode === 'border' ? backgroundColor : '#ccc',
+                  fillOpacity: viewMode === 'border' ? 1 : 0.2,
                 });
               },
               click: async function () {
