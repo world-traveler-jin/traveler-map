@@ -1,13 +1,13 @@
-// Map.js 파일 (viewMode에 따라 지도모드/국경모드 전환 지원 + 다크모드 대응 + 나라 이름 중심 + 줌에 따른 크기 조정)
+// Map.js 파일 (viewMode에 따라 지도모드/국경모드 전환 지원, 다크모드 대응 + countryCenters.json 사용)
 
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import L from 'leaflet';
 
 // Map 컴포넌트 정의 (setSelectedCountry, viewMode props 전달 받음)
 export default function Map({ setSelectedCountry, viewMode }) {
   const mapContainerRef = useRef(null); // 지도 div를 참조하기 위한 ref
   const mapInstanceRef = useRef(null);  // Leaflet map 인스턴스를 저장하는 ref
-  const labelsRef = useRef([]); // 나라 이름(label)들을 저장할 ref
+  const [countryCenters, setCountryCenters] = useState({}); // countryCenters.json 데이터 저장
 
   // 위키피디아에서 국가 정보를 가져오는 비동기 함수
   const getCountryInfo = async (countryName) => {
@@ -26,14 +26,9 @@ export default function Map({ setSelectedCountry, viewMode }) {
     return { description: 'Unable to fetch information.', flag: null };
   };
 
-  // 폰트 크기 계산 함수 (줌 레벨에 따라 부드럽게 폰트 크기 변화)
-  const calculateFontSize = (zoom) => {
-    return 4 + zoom * 2; // 예: zoom 3 -> 10px, zoom 8 -> 20px
-  };
-
-  // 지도 초기화 및 기본 설정
+  // 지도 초기화 및 countryCenters.json 불러오기
   useEffect(() => {
-    if (mapInstanceRef.current) return; // 이미 초기화 되어 있으면 무시
+    if (mapInstanceRef.current) return; // 이미 초기화되어 있으면 중복 생성 방지
 
     const map = L.map(mapContainerRef.current, {
       zoomControl: true,
@@ -48,19 +43,24 @@ export default function Map({ setSelectedCountry, viewMode }) {
 
     mapInstanceRef.current = map;
 
-    // 사용자 위치 설정
+    // 사용자 위치로 이동하는 함수
     const setUserLocation = (position) => {
       const { latitude, longitude } = position.coords;
       map.setView([latitude, longitude], 4);
     };
 
-    // 위치 불러오기 실패했을 때 기본 위치로
+    // 위치 가져오기 실패 시 기본 위치 설정
     const handleLocationError = (error) => {
       console.warn('Failed to fetch location:', error.message);
       map.setView([20, 0], 2);
     };
 
     navigator.geolocation.getCurrentPosition(setUserLocation, handleLocationError);
+
+    // countryCenters.json 불러오기
+    fetch('/data/countryCenters.json')
+      .then((res) => res.json())
+      .then((data) => setCountryCenters(data));
   }, []);
 
   // viewMode가 변경될 때마다 타일 및 레이어 적용
@@ -68,17 +68,11 @@ export default function Map({ setSelectedCountry, viewMode }) {
     const map = mapInstanceRef.current;
     if (!map) return;
 
-    // 기존 레이어 및 라벨 모두 삭제
-    map.eachLayer((layer) => map.removeLayer(layer));
-    labelsRef.current.forEach((label) => map.removeLayer(label));
-    labelsRef.current = []; // 라벨 배열 비우기
+    map.eachLayer((layer) => {
+      map.removeLayer(layer); // 기존 레이어 모두 삭제
+    });
 
-    // 다크모드 판단
-    const isDark = document.documentElement.classList.contains('dark');
-    const borderColor = isDark ? '#ccc' : '#333';
-    const textColor = isDark ? '#f3f4f6' : '#374151';
-
-    // 지도모드일 경우 Mapbox 타일 추가
+    // 지도모드일 경우 Mapbox 타일 레이어 추가
     if (viewMode === 'map') {
       const accessToken = process.env.NEXT_PUBLIC_MAPBOX_TOKEN;
       L.tileLayer(
@@ -93,12 +87,35 @@ export default function Map({ setSelectedCountry, viewMode }) {
       ).addTo(map);
     }
 
-    // GeoJSON 로드
+    // 기본 국경 스타일 (라이트모드 기준)
+    const defaultStyle = {
+      color: '#333',
+      weight: 1,
+      fillColor: '#ccc',
+      fillOpacity: 0.2,
+    };
+
+    // 하이라이트 스타일 (국가 위에 마우스 올렸을 때)
+    const highlightStyle = {
+      color: '#2563eb',
+      weight: 2,
+      fillColor: '#93c5fd',
+      fillOpacity: 0.5,
+    };
+
+    // 현재 다크모드인지 판단 (html에 dark 클래스 있는지 확인)
+    const isDark = document.documentElement.classList.contains('dark');
+
+    // 국경선과 텍스트 색상 다크모드에 맞춰 설정
+    const borderColor = isDark ? '#ccc' : '#333';
+    const textColor = isDark ? '#f3f4f6' : '#374151';
+
+    // GeoJSON 데이터 가져와서 국경선 및 국가 이름 렌더링
     fetch('/data/countries.geo.json')
       .then((res) => res.json())
       .then((geojson) => {
         L.geoJSON(geojson, {
-          style: () => ({
+          style: (feature) => ({
             color: borderColor,
             weight: 1,
             fillColor: viewMode === 'border' ? (isDark ? '#1f2937' : '#ffffff') : '#ccc',
@@ -106,16 +123,11 @@ export default function Map({ setSelectedCountry, viewMode }) {
           }),
           onEachFeature: (feature, layer) => {
             layer.on({
-              mouseover: () => {
-                layer.setStyle({
-                  color: '#2563eb',
-                  weight: 2,
-                  fillColor: '#93c5fd',
-                  fillOpacity: 0.5,
-                });
+              mouseover: function () {
+                layer.setStyle(highlightStyle);
                 layer.bringToFront();
               },
-              mouseout: () => {
+              mouseout: function () {
                 layer.setStyle({
                   color: borderColor,
                   weight: 1,
@@ -123,7 +135,7 @@ export default function Map({ setSelectedCountry, viewMode }) {
                   fillOpacity: viewMode === 'border' ? 0 : 0.2,
                 });
               },
-              click: async () => {
+              click: async function () {
                 const countryData = await getCountryInfo(feature.properties.name);
                 setSelectedCountry({
                   ...feature.properties,
@@ -133,43 +145,33 @@ export default function Map({ setSelectedCountry, viewMode }) {
               },
             });
 
-            // 국경모드일 때 나라 이름 추가
+            // 국경 모드일 때만 나라 이름 라벨 추가
             if (viewMode === 'border') {
-              const center = layer.getBounds().getCenter();
+              const countryName = feature.properties.ADMIN || feature.properties.name;
+              const centerData = countryCenters[countryName];
+              let center;
+
+              if (centerData) {
+                center = L.latLng(centerData.lat, centerData.lng);
+              } else {
+                center = layer.getBounds().getCenter(); // fallback
+              }
+
               const label = L.marker(center, {
                 icon: L.divIcon({
                   className: 'country-label',
-                  html: `<span style="color:${textColor}; font-size:${calculateFontSize(map.getZoom())}px;">${feature.properties.name}</span>`,
+                  html: `<span style="color:${textColor}; font-size:12px;">${feature.properties.name}</span>`,
                   iconSize: [100, 20],
                   iconAnchor: [50, 10],
                 }),
               });
               label.addTo(map);
-              labelsRef.current.push(label);
             }
           },
         }).addTo(map);
       });
+  }, [viewMode, setSelectedCountry, countryCenters]);
 
-    // 지도 줌이 변경될 때 폰트 크기 업데이트
-    const handleZoom = () => {
-      const zoom = map.getZoom();
-      labelsRef.current.forEach((label) => {
-        const el = label.getElement()?.querySelector('span');
-        if (el) {
-          el.style.fontSize = `${calculateFontSize(zoom)}px`;
-        }
-      });
-    };
-
-    map.on('zoomend', handleZoom);
-
-    return () => {
-      map.off('zoomend', handleZoom); // 이벤트 클린업
-    };
-  }, [viewMode, setSelectedCountry]);
-
-  // 실제 지도를 렌더링하는 div
   return (
     <div
       ref={mapContainerRef}
