@@ -1,4 +1,4 @@
-// Home.js 파일 (Countries 탭에 모든 나라 표시하도록 수정)
+// Home.js 파일 (localStorage 저장 + 검색 기능 + 모두 추가/삭제 + 국기 표시 추가)
 
 import Head from 'next/head';
 import dynamic from 'next/dynamic';
@@ -16,6 +16,7 @@ export default function Home() {
   const [activeTab, setActiveTab] = useState('Map');
   const [favorites, setFavorites] = useState([]);
   const [countries, setCountries] = useState([]);
+  const [searchTerm, setSearchTerm] = useState('');
 
   useEffect(() => {
     const timeout = setTimeout(() => setLoading(false), 1500);
@@ -34,8 +35,17 @@ export default function Home() {
   useEffect(() => {
     fetch('/data/countryCenters.json')
       .then((res) => res.json())
-      .then((data) => setCountries(Object.keys(data)));
+      .then((data) => {
+        const sortedCountries = Object.keys(data).sort();
+        setCountries(sortedCountries);
+      });
+    const savedFavorites = JSON.parse(localStorage.getItem('favorites'));
+    if (savedFavorites) setFavorites(savedFavorites);
   }, []);
+
+  useEffect(() => {
+    localStorage.setItem('favorites', JSON.stringify(favorites));
+  }, [favorites]);
 
   const addToFavorites = (country) => {
     if (!favorites.includes(country)) {
@@ -45,6 +55,31 @@ export default function Home() {
 
   const removeFromFavorites = (country) => {
     setFavorites(favorites.filter((fav) => fav !== country));
+  };
+
+  const addAllToFavorites = () => {
+    setFavorites(countries);
+  };
+
+  const clearFavorites = () => {
+    setFavorites([]);
+  };
+
+  const filteredCountries = countries.filter((country) =>
+    country.toLowerCase().includes(searchTerm.toLowerCase())
+  );
+
+  const getFlagEmoji = (countryName) => {
+    try {
+      const code = countryName
+        .split(' ')
+        .slice(-1)[0]
+        .toUpperCase()
+        .slice(0, 2);
+      return String.fromCodePoint(...[...code].map(c => 127397 + c.charCodeAt()));
+    } catch {
+      return '🏳️';
+    }
   };
 
   return (
@@ -92,11 +127,17 @@ export default function Home() {
               {activeTab === 'Countries' && (
                 <div className="p-6">
                   <h2 className="text-xl font-bold mb-4">Countries List</h2>
+                  <input type="text" placeholder="Search countries..." value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} className="w-full p-2 mb-4 rounded-md border border-gray-300" />
+                  <button onClick={addAllToFavorites} className="px-4 py-2 mb-4 bg-green-400 text-white rounded-full hover:bg-green-500">➕ Add All to Favorites</button>
                   <ul className="space-y-2">
-                    {countries.map((country) => (
+                    {filteredCountries.map((country) => (
                       <li key={country} className="flex justify-between items-center">
-                        <span>{country}</span>
-                        <button onClick={() => addToFavorites(country)} className="text-sm px-2 py-1 bg-green-200 dark:bg-green-700 text-green-800 dark:text-white rounded-full hover:bg-green-300 dark:hover:bg-green-600">Add to Favorites</button>
+                        <span>{getFlagEmoji(country)} {country}</span>
+                        {favorites.includes(country) ? (
+                          <span className="text-xs text-green-600 dark:text-green-300">Already Added</span>
+                        ) : (
+                          <button onClick={() => addToFavorites(country)} className="text-sm px-2 py-1 bg-green-200 dark:bg-green-700 text-green-800 dark:text-white rounded-full hover:bg-green-300 dark:hover:bg-green-600">Add</button>
+                        )}
                       </li>
                     ))}
                   </ul>
@@ -105,13 +146,14 @@ export default function Home() {
               {activeTab === 'Favorites' && (
                 <div className="p-6">
                   <h2 className="text-xl font-bold mb-4">My Favorites</h2>
+                  <button onClick={clearFavorites} className="px-4 py-2 mb-4 bg-red-400 text-white rounded-full hover:bg-red-500">🗑️ Clear All Favorites</button>
                   {favorites.length === 0 ? (
                     <p>No favorites yet.</p>
                   ) : (
                     <ul className="space-y-2">
                       {favorites.map((fav) => (
                         <li key={fav} className="flex justify-between items-center">
-                          <span>{fav}</span>
+                          <span>{getFlagEmoji(fav)} {fav}</span>
                           <button onClick={() => removeFromFavorites(fav)} className="text-sm px-2 py-1 bg-red-200 dark:bg-red-700 text-red-800 dark:text-white rounded-full hover:bg-red-300 dark:hover:bg-red-600">Remove</button>
                         </li>
                       ))}
@@ -122,7 +164,7 @@ export default function Home() {
             </div>
 
             <footer className={`w-full px-4 py-4 text-center text-xs transition-colors duration-500 ${isDark ? 'text-gray-400 bg-blue-950 border-t border-gray-700' : 'text-gray-600 bg-sky-100 border-t border-gray-200'}`}>
-              © 2025 Traveler Map. Made with ❤️ for explorers.
+              © 2025 Traveler Map. Made by Traveler_Jin and ChatGPT for explorers.
             </footer>
           </>
         )}
