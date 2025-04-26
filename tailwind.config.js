@@ -1,8 +1,11 @@
+// tailwind.config.js
+
 module.exports = {
+  darkMode: 'class', // ⭐️ 반드시 이 줄 추가
   content: [
-    './pages/**/*.{js,ts,jsx,tsx}',
-    './components/**/*.{js,ts,jsx,tsx}',
-    './styles/**/*.css', // 글로벌 CSS 경로 추가
+    "./pages/**/*.{js,ts,jsx,tsx}",
+    "./components/**/*.{js,ts,jsx,tsx}",
+    "./app/**/*.{js,ts,jsx,tsx}"
   ],
   theme: {
     extend: {},
