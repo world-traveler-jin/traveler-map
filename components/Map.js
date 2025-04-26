@@ -1,9 +1,9 @@
-// Map.js 파일 (다크모드/라이트모드 감성 스타일 강화)
+// Map.js 파일 (다크모드/라이트모드 감성 스타일 강화 + 이름 표시 토글 추가)
 
 import { useEffect, useRef, useState } from 'react';
 import L from 'leaflet';
 
-export default function Map({ setSelectedCountry, viewMode }) {
+export default function Map({ setSelectedCountry, viewMode, showLabels }) {
   const mapContainerRef = useRef(null);
   const mapInstanceRef = useRef(null);
   const [countryCenters, setCountryCenters] = useState({});
@@ -80,7 +80,7 @@ export default function Map({ setSelectedCountry, viewMode }) {
 
     const borderColor = (viewMode === 'border')
       ? (isDark ? '#f9fafb' : '#1f2937')
-      : (isDark ? '#555' : '#ccc');
+      : (isDark ? 'transparent' : 'transparent');
 
     const textColor = (viewMode === 'border')
       ? (isDark ? '#ffffff' : '#000000')
@@ -108,7 +108,7 @@ export default function Map({ setSelectedCountry, viewMode }) {
         L.geoJSON(geojson, {
           style: (feature) => ({
             color: borderColor,
-            weight: 1,
+            weight: viewMode === 'border' ? 1 : 0,
             fillColor: viewMode === 'border' ? backgroundColor : '#ccc',
             fillOpacity: viewMode === 'border' ? 1 : 0.2,
           }),
@@ -126,7 +126,7 @@ export default function Map({ setSelectedCountry, viewMode }) {
               mouseout: function () {
                 layer.setStyle({
                   color: borderColor,
-                  weight: 1,
+                  weight: viewMode === 'border' ? 1 : 0,
                   fillColor: viewMode === 'border' ? backgroundColor : '#ccc',
                   fillOpacity: viewMode === 'border' ? 1 : 0.2,
                 });
@@ -141,7 +141,7 @@ export default function Map({ setSelectedCountry, viewMode }) {
               },
             });
 
-            if (viewMode === 'border') {
+            if (viewMode === 'border' && showLabels) {
               const countryName = feature.properties.ADMIN || feature.properties.name;
               const centerData = countryCenters[countryName];
               let center;
@@ -165,7 +165,7 @@ export default function Map({ setSelectedCountry, viewMode }) {
           },
         }).addTo(map);
       });
-  }, [viewMode, setSelectedCountry, countryCenters, themeVersion]);
+  }, [viewMode, setSelectedCountry, countryCenters, themeVersion, showLabels]);
 
   return (
     <div
