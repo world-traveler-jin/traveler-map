@@ -1,4 +1,4 @@
-// Home.js 파일 (Countries, Favorites 기능 추가 완료)
+// Home.js 파일 (Countries 탭에 모든 나라 표시하도록 수정)
 
 import Head from 'next/head';
 import dynamic from 'next/dynamic';
@@ -15,6 +15,7 @@ export default function Home() {
   const [showLabels, setShowLabels] = useState(true);
   const [activeTab, setActiveTab] = useState('Map');
   const [favorites, setFavorites] = useState([]);
+  const [countries, setCountries] = useState([]);
 
   useEffect(() => {
     const timeout = setTimeout(() => setLoading(false), 1500);
@@ -29,6 +30,12 @@ export default function Home() {
       root.classList.remove('dark');
     }
   }, [isDark]);
+
+  useEffect(() => {
+    fetch('/data/countryCenters.json')
+      .then((res) => res.json())
+      .then((data) => setCountries(Object.keys(data)));
+  }, []);
 
   const addToFavorites = (country) => {
     if (!favorites.includes(country)) {
@@ -78,15 +85,15 @@ export default function Home() {
               ))}
             </nav>
 
-            <div className="flex-grow h-[60vh] sm:h-[65vh] md:h-[70vh] animate-fadeIn">
+            <div className="flex-grow h-[60vh] sm:h-[65vh] md:h-[70vh] animate-fadeIn overflow-y-auto">
               {activeTab === 'Map' && (
                 <Map setSelectedCountry={setSelectedCountry} viewMode={viewMode} showLabels={showLabels} />
               )}
               {activeTab === 'Countries' && (
                 <div className="p-6">
-                  <h2 className="text-xl font-bold mb-4">Countries List (예시)</h2>
+                  <h2 className="text-xl font-bold mb-4">Countries List</h2>
                   <ul className="space-y-2">
-                    {['United States', 'France', 'Japan', 'Brazil', 'South Korea'].map((country) => (
+                    {countries.map((country) => (
                       <li key={country} className="flex justify-between items-center">
                         <span>{country}</span>
                         <button onClick={() => addToFavorites(country)} className="text-sm px-2 py-1 bg-green-200 dark:bg-green-700 text-green-800 dark:text-white rounded-full hover:bg-green-300 dark:hover:bg-green-600">Add to Favorites</button>
