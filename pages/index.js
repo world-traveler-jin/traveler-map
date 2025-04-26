@@ -1,4 +1,4 @@
-// Home.js 파일 (Footer 복구 + 헤더/메뉴 색상 모드별 자연스럽게 조정)
+// Home.js 파일 (Footer, Header, Nav 감성 색상 업데이트 - 여행가 느낌)
 
 import Head from 'next/head';
 import dynamic from 'next/dynamic';
@@ -36,7 +36,7 @@ export default function Home() {
         <meta name="viewport" content="initial-scale=1.0, width=device-width" />
       </Head>
 
-      <div className="flex flex-col min-h-screen bg-gradient-to-br from-blue-50 to-white dark:from-gray-900 dark:to-gray-800 text-gray-800 dark:text-gray-100 transition-colors duration-500">
+      <div className={`flex flex-col min-h-screen transition-colors duration-500 ${isDark ? 'bg-gradient-to-br from-blue-950 via-gray-900 to-gray-800 text-gray-100' : 'bg-gradient-to-br from-sky-100 via-yellow-50 to-white text-gray-800'}`}>
         {loading ? (
           <div className="flex flex-col justify-center items-center flex-grow animate-fadeIn">
             <img src="/loading-globe.gif" alt="Loading Globe" className="w-16 h-16 animate-bounce" />
@@ -44,8 +44,8 @@ export default function Home() {
           </div>
         ) : (
           <>
-            <header className={`w-full px-4 py-3 flex justify-between items-center shadow-md sticky top-0 z-10 transition-all duration-500 ease-in-out ${isDark ? 'bg-gray-900' : 'bg-white/80 backdrop-blur-md'}`}>
-              <h1 className="text-2xl md:text-3xl font-bold text-blue-600 dark:text-blue-400 tracking-tight animate-fadeIn">Traveler Map</h1>
+            <header className={`w-full px-4 py-3 flex justify-between items-center shadow-md sticky top-0 z-10 transition-all duration-500 ease-in-out ${isDark ? 'bg-blue-950' : 'bg-sky-100/80 backdrop-blur-md'}`}>
+              <h1 className="text-2xl md:text-3xl font-bold text-blue-600 dark:text-blue-300 tracking-tight animate-fadeIn">Traveler Map</h1>
               <div className="flex gap-2 animate-fadeIn">
                 <button
                   onClick={() => setIsDark(!isDark)}
@@ -88,7 +88,7 @@ export default function Home() {
               <Map setSelectedCountry={setSelectedCountry} viewMode={viewMode} showLabels={showLabels} />
             </div>
 
-            <footer className="w-full px-4 py-4 text-center text-xs text-gray-500 dark:text-gray-400 border-t border-gray-200 dark:border-gray-700 mt-6">
+            <footer className={`w-full px-4 py-4 text-center text-xs transition-colors duration-500 ${isDark ? 'text-gray-400 bg-blue-950 border-t border-gray-700' : 'text-gray-600 bg-sky-100 border-t border-gray-200'}`}>
               © 2025 Traveler Map. Made with ❤️ for explorers.
             </footer>
           </>
