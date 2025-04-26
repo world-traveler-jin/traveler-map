@@ -1,4 +1,4 @@
-// Home.js 파일 (로딩화면 감성 업그레이드 + 네비게이션 활성화 + 버튼 부드러운 애니메이션)
+// Home.js 파일 (Footer 복구 + 헤더/메뉴 색상 모드별 자연스럽게 조정)
 
 import Head from 'next/head';
 import dynamic from 'next/dynamic';
@@ -44,7 +44,7 @@ export default function Home() {
           </div>
         ) : (
           <>
-            <header className="w-full px-4 py-3 flex justify-between items-center shadow-md bg-white dark:bg-gray-900 sticky top-0 z-10 transition-all duration-500 ease-in-out">
+            <header className={`w-full px-4 py-3 flex justify-between items-center shadow-md sticky top-0 z-10 transition-all duration-500 ease-in-out ${isDark ? 'bg-gray-900' : 'bg-white/80 backdrop-blur-md'}`}>
               <h1 className="text-2xl md:text-3xl font-bold text-blue-600 dark:text-blue-400 tracking-tight animate-fadeIn">Traveler Map</h1>
               <div className="flex gap-2 animate-fadeIn">
                 <button
@@ -88,6 +88,9 @@ export default function Home() {
               <Map setSelectedCountry={setSelectedCountry} viewMode={viewMode} showLabels={showLabels} />
             </div>
 
+            <footer className="w-full px-4 py-4 text-center text-xs text-gray-500 dark:text-gray-400 border-t border-gray-200 dark:border-gray-700 mt-6">
+              © 2025 Traveler Map. Made with ❤️ for explorers.
+            </footer>
           </>
         )}
       </div>
